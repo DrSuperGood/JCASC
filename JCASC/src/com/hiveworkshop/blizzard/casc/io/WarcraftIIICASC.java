@@ -65,7 +65,7 @@ public class WarcraftIIICASC implements AutoCloseable {
 				return false;
 			}
 		}
-		
+
 		/**
 		 * Test if the specified file path is available from local storage.
 		 * 
@@ -136,9 +136,19 @@ public class WarcraftIIICASC implements AutoCloseable {
 	private final Info buildInfo;
 
 	/**
+	 * Detected active build information record.
+	 */
+	private final int activeInfoRecord;
+
+	/**
 	 * Warcraft III build configuration.
 	 */
 	private final ConfigurationFile buildConfiguration;
+
+	/**
+	 * Warcraft III CASC data folder path.
+	 */
+	private final Path dataPath;
 
 	/**
 	 * Warcraft III local storage.
@@ -149,11 +159,6 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * TVFS file system to resolve file paths.
 	 */
 	private final VirtualFileSystem vfs;
-
-	/**
-	 * Warcraft III CASC data folder path.
-	 */
-	private final Path dataPath;
 
 	/**
 	 * Construct an interface to the CASC local storage used by Warcraft III. Can be
@@ -198,13 +203,14 @@ public class WarcraftIIICASC implements AutoCloseable {
 		if (recordIndex == recordCount) {
 			throw new MalformedCASCStructureException("build info contains no active record");
 		}
+		activeInfoRecord = recordIndex;
 
 		// resolve build configuration file
 		final var buildKeyFieldIndex = buildInfo.getFieldIndex("Build Key");
 		if (buildKeyFieldIndex == -1) {
 			throw new MalformedCASCStructureException("build info contains no build key field");
 		}
-		final var buildKey = buildInfo.getField(0, buildKeyFieldIndex);
+		final var buildKey = buildInfo.getField(activeInfoRecord, buildKeyFieldIndex);
 
 		// resolve data folder
 		dataPath = installFolder.resolve(WC3_DATA_FOLDER_NAME);
@@ -234,6 +240,23 @@ public class WarcraftIIICASC implements AutoCloseable {
 	@Override
 	public void close() throws IOException {
 		localStorage.close();
+	}
+
+	/**
+	 * Returns the active branch name which is currently mounted.
+	 * <p>
+	 * This might reflect the locale that has been cached to local storage.
+	 * 
+	 * @return Branch name.
+	 * @throws IOException If no branch information is available.
+	 */
+	public String getBranch() throws IOException {
+		// resolve branch
+		final var branchFieldIndex = buildInfo.getFieldIndex("Branch");
+		if (branchFieldIndex == -1) {
+			throw new MalformedCASCStructureException("build info contains no branch field");
+		}
+		return buildInfo.getField(activeInfoRecord, branchFieldIndex);
 	}
 
 	/**

@@ -13,9 +13,14 @@ import com.hiveworkshop.blizzard.casc.io.WarcraftIIICASC;
  * archive.
  * <p>
  * First argument is a file path to the Warcraft III install folder. Second
- * argument is then a flag, either -l to list all files or -e to extract a
- * specific file. With -e the a source file to extract and a destination folder
+ * argument is then a flag.
+ * <p>
+ * -l to list all files.
+ * <p>
+ * -e to extract a specific file. With -e the a source file to extract and a destination folder
  * must be specified.
+ * <p>
+ * -b or -branch to list the active branch.
  */
 public class WC3CASCExtractor {
 	
@@ -77,6 +82,10 @@ public class WC3CASCExtractor {
 						destinationChannel.write(fileBuffer);
 					}
 				}
+				break;
+			case "-b" :
+			case "-branch" :
+				System.out.println("Active branch: " + dataSource.getBranch());
 				break;
 			default :
 				System.out.println("Unknown operation.");
