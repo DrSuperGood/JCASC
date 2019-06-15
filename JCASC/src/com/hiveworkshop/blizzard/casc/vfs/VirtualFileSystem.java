@@ -562,8 +562,8 @@ public final class VirtualFileSystem {
 			final var childCount = prefixNode.getNodeCount();
 
 			var low = 0;
-			var high = childCount;
-			while (low != high) {
+			var high = childCount - 1;
+			while (low <= high) {
 				final var middle = (low + high) / 2;
 				final var searchNode = prefixNode.getNode(middle);
 				final var result = compareNodePathFragments(pathFragments, fragmentIndex, fragmentOffset, searchNode);
@@ -572,9 +572,9 @@ public final class VirtualFileSystem {
 					// possible match
 					return recursiveResolvePathFragments(pathFragments, fragmentIndex, fragmentOffset, searchNode);
 				} else if (result < 0) {
-					high = middle;
+					high = middle - 1;
 				} else {
-					low = middle;
+					low = middle + 1;
 				}
 			}
 
