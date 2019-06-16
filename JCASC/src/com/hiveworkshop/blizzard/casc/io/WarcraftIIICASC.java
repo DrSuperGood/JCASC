@@ -243,6 +243,16 @@ public class WarcraftIIICASC implements AutoCloseable {
 	}
 
 	/**
+	 * Returns the active record index of the build information. This is the index
+	 * of the record that is mounted.
+	 * 
+	 * @return Active record index of build information.
+	 */
+	public int getActiveRecordIndex() {
+		return activeInfoRecord;
+	}
+
+	/**
 	 * Returns the active branch name which is currently mounted.
 	 * <p>
 	 * This might reflect the locale that has been cached to local storage.
@@ -257,6 +267,15 @@ public class WarcraftIIICASC implements AutoCloseable {
 			throw new MalformedCASCStructureException("build info contains no branch field");
 		}
 		return buildInfo.getField(activeInfoRecord, branchFieldIndex);
+	}
+
+	/**
+	 * Returns the build information of the archive.
+	 * 
+	 * @return Build information.
+	 */
+	public Info getBuildInfo() {
+		return buildInfo;
 	}
 
 	/**

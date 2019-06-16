@@ -21,12 +21,12 @@ public class Info {
 	 * data folder).
 	 */
 	public static final String BUILD_INFO_FILE_NAME = ".build.info";
-	
+
 	/**
 	 * Character encoding used by info files.
 	 */
 	public static final Charset FILE_ENCODING = Charset.forName("UTF8");
-	
+
 	/**
 	 * Field separator used by CASC info files.
 	 */
@@ -51,16 +51,16 @@ public class Info {
 	 * Construct an info file from an array of encoded lines.
 	 * 
 	 * @param encodedLines Encoded lines.
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public Info(final ByteBuffer fileBuffer) throws IOException {
 		try (final var fileStream = new ByteBufferInputStream(fileBuffer);
-			final var lineScanner = new Scanner(fileStream, FILE_ENCODING)) {
+				final var lineScanner = new Scanner(fileStream, FILE_ENCODING)) {
 			final var encodedFieldDescriptors = separateFields(lineScanner.nextLine());
 			for (var encodedFieldDescriptor : encodedFieldDescriptors) {
 				fieldDescriptors.add(new FieldDescriptor(encodedFieldDescriptor));
 			}
-			
+
 			while (lineScanner.hasNextLine()) {
 				records.add(new ArrayList<>(List.of(separateFields(lineScanner.nextLine()))));
 			}
@@ -73,11 +73,32 @@ public class Info {
 	 * Retrieves a specific field of a record.
 	 * 
 	 * @param recordIndex Record index to lookup.
-	 * @param fieldIndex  Field index of record to retrieve.
+	 * @param fieldIndex  Field index to retrieve of record.
 	 * @return Field value.
+	 * @throws IndexOutOfBoundsException When recordIndex or fieldIndex are out of
+	 *                                   bounds.
 	 */
 	public String getField(final int recordIndex, final int fieldIndex) {
 		return records.get(recordIndex).get(fieldIndex);
+	}
+
+	/**
+	 * Retrieves a specific field of a record.
+	 * 
+	 * @param recordIndex Record index to lookup.
+	 * @param fieldName   Field name to retrieve of record.
+	 * @return Field value, or null if field does not exist.
+	 * @throws IndexOutOfBoundsException When recordIndex is out of bounds.
+	 */
+	public String getField(final int recordIndex, final String fieldName) {
+		// resolve field
+		final var fieldIndex = getFieldIndex(fieldName);
+		if (fieldIndex == -1) {
+			// field does not exist
+			return null;
+		}
+
+		return getField(recordIndex, fieldIndex);
 	}
 
 	/**
