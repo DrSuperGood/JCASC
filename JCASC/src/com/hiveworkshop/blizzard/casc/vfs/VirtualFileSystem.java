@@ -163,17 +163,18 @@ public final class VirtualFileSystem {
 			for (var fileReferenceIndex = 0; fileReferenceIndex < fileReferenceCount; fileReferenceIndex += 1) {
 				final var fileReference = fileNode.getFileReference(fileReferenceIndex);
 
-				final var logicalSize = fileReference.getSize();
-				if (logicalSize != fileReference.getActualSize()) {
-					throw new MalformedCASCStructureException("inconsistent size");
+				final var chunkSize = fileReference.getSize();
+				if (chunkSize != fileReference.getActualSize()) {
+					throw new MalformedCASCStructureException("bank and chunk size inconsistent");
 				}
-				final var logicalOffset = fileReference.getOffset();
+				final var chunkOffset = fileReference.getOffset();
 
 				final var bankStream = storage.getBanks(fileReference.getEncodingKey());
 				// TODO test if compressed and logical sizes match stored sizes.
 
-				fileBuffer.limit((int) (logicalOffset + logicalSize));
-				fileBuffer.position((int) logicalOffset);
+				fileBuffer.limit((int) (chunkOffset + chunkSize));
+				fileBuffer.position((int) chunkOffset);
+				
 				while (bankStream.hasNextBank()) {
 					bankStream.getBank(fileBuffer);
 				}

@@ -143,7 +143,8 @@ public class TVFSDecoder {
 				final var offset = Integer.toUnsignedLong(logicalBuffer.getInt());
 				final var size = Integer.toUnsignedLong(logicalBuffer.getInt());
 
-				logicalBuffer.get(contentsOffsetDecoder.array(), Integer.BYTES - contentsOffsetSize, contentsOffsetSize);
+				logicalBuffer.get(contentsOffsetDecoder.array(), Integer.BYTES - contentsOffsetSize,
+						contentsOffsetSize);
 				final var cascReferenceOffset = contentsOffsetDecoder.getInt(0);
 
 				if (cascReferenceOffset > storageBuffer.limit()) {
@@ -154,11 +155,13 @@ public class TVFSDecoder {
 				try {
 					final var encodingKeyDecoder = new byte[encodingKeySize];
 					storageBuffer.get(encodingKeyDecoder);
-					
+
 					final var physicalSize = storageBuffer.getInt();
+					final var unknownMember1 = storageBuffer.get();
 					final var actualSize = storageBuffer.getInt();
 
-					final var reference = new StorageReference(offset, size, new Key(encodingKeyDecoder), physicalSize, actualSize);
+					final var reference = new StorageReference(offset, size, new Key(encodingKeyDecoder), physicalSize,
+							unknownMember1, actualSize);
 					references[i] = reference;
 				} catch (BufferUnderflowException e) {
 					throw new MalformedCASCStructureException("storage goes out of bounds");
