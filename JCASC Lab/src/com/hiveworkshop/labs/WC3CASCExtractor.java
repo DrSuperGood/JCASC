@@ -12,12 +12,13 @@ import com.hiveworkshop.blizzard.casc.io.WarcraftIIICASC;
  * A simple application for extracting a single file from the Warcraft III CASC
  * archive.
  * <p>
- * First argument is a file path to the Warcraft III install folder. Second
- * argument is then a flag.
+ * First argument is a file path to the Warcraft III install folder. An optional
+ * second argument -p cam ne used to select a specific product. Then one of the
+ * following flags can be used.
  * <p>
  * -l to list all files.
  * <p>
- * -e to extract a specific file. With -e the a source file to extract and a
+ * -e to extract a specific file. With -e a source file to extract and a
  * destination folder must be specified.
  * <p>
  * -b or -branch to list the active branch.
@@ -28,6 +29,7 @@ import com.hiveworkshop.blizzard.casc.io.WarcraftIIICASC;
 public class WC3CASCExtractor {
 
 	public static void main(String... args) {
+		int pos = 0;
 		if (args.length < 1) {
 			System.out.println("No install path specified.");
 			return;
@@ -39,16 +41,23 @@ public class WC3CASCExtractor {
 			System.out.println("Install path is not a folder.");
 			return;
 		}
+		pos+= 1;
+		
+		String product = WarcraftIIICASC.Product.w3.name();
+		if (args.length - pos >= 2 && args[pos].equals("-p")) {
+			product = args[pos + 1];
+			pos+= 2;
+		}
 
 		System.out.println("Mounting.");
-		try (final var dataSource = new WarcraftIIICASC(installPath, true)) {
+		try (final var dataSource = new WarcraftIIICASC(installPath, true, product)) {
 			final var root = dataSource.getRootFileSystem();
 
-			if (args.length < 2) {
+			if (args.length - pos < 1) {
 				System.out.println("No operation specified.");
 				return;
 			}
-			final var operationString = args[1];
+			final var operationString = args[pos];
 			switch (operationString) {
 			case "-l":
 				System.out.println("Enumerating files.");
@@ -63,8 +72,8 @@ public class WC3CASCExtractor {
 					return;
 				}
 
-				final var sourceFilePathString = args[2];
-				final var destinationFolderPathString = args[3];
+				final var sourceFilePathString = args[pos + 1];
+				final var destinationFolderPathString = args[pos + 2];
 
 				if (!root.isFile(sourceFilePathString)) {
 					System.out.println("Specified file path does not exist.");
@@ -93,12 +102,12 @@ public class WC3CASCExtractor {
 				break;
 			case "-bi":
 			case "-buildinfo":
-				if (args.length < 3) {
+				if (args.length - pos < 2) {
 					System.out.println("Not enough operands.");
 					return;
 				}
 
-				final var fieldName = args[2];
+				final var fieldName = args[pos + 1];
 				final var value = dataSource.getBuildInfo().getField(dataSource.getActiveRecordIndex(), fieldName);
 
 				System.out.println("Field name: " + fieldName);
