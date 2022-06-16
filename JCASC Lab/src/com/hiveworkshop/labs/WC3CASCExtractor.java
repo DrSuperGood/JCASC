@@ -43,7 +43,7 @@ public class WC3CASCExtractor {
 		}
 		pos+= 1;
 		
-		String product = WarcraftIIICASC.Product.w3.name();
+		String product = null;
 		if (args.length - pos >= 2 && args[pos].equals("-p")) {
 			product = args[pos + 1];
 			pos+= 2;

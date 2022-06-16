@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import com.hiveworkshop.blizzard.casc.ConfigurationFile;
 import com.hiveworkshop.blizzard.casc.info.Info;
@@ -175,14 +176,14 @@ public class WarcraftIIICASC implements AutoCloseable {
 	}
 	
 	/**
-	 * Construct an interface to the CASC local storage used by the current release
-	 * of Warcraft III. Can be used to read data files from the local storage.
+	 * Construct an interface to the CASC local storage used by the first active
+	 * build of Warcraft III. Can be used to read data files from the local storage.
 	 * <p>
 	 * The active build record is used for local storage details.
 	 * <p>
 	 * Install folder is the Warcraft III installation folder where the
 	 * <code>.build.info</code> file is located. For example
-	 * <code>C:\Program Files (x86)\Warcraft III</code>.
+	 * <code>C:\Program Files\Warcraft III</code>.
 	 * <p>
 	 * Memory mapped IO can be used instead of conventional channel based IO. This
 	 * should improve IO performance considerably by avoiding excessive memory copy
@@ -195,7 +196,7 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * @throws IOException If an exception occurs while mounting.
 	 */
 	public WarcraftIIICASC(final Path installFolder, final boolean useMemoryMapping) throws IOException {
-		this(installFolder, useMemoryMapping, Product.w3.name());
+		this(installFolder, useMemoryMapping, (String)null);
 	}
 	
 	/**
@@ -206,7 +207,7 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * <p>
 	 * Install folder is the Warcraft III installation folder where the
 	 * <code>.build.info</code> file is located. For example
-	 * <code>C:\Program Files (x86)\Warcraft III</code>.
+	 * <code>C:\Program Files\Warcraft III</code>.
 	 * <p>
 	 * Memory mapped IO can be used instead of conventional channel based IO. This
 	 * should improve IO performance considerably by avoiding excessive memory copy
@@ -216,7 +217,7 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * 
 	 * @param installFolder    Warcraft III installation folder.
 	 * @param useMemoryMapping If memory mapped IO should be used to read file data.
-	 * @param product          The product to load.
+	 * @param product          Product of build.
 	 * @throws IOException If an exception occurs while mounting.
 	 */
 	public WarcraftIIICASC(final Path installFolder, final boolean useMemoryMapping, final Product product) throws IOException {
@@ -231,7 +232,7 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * <p>
 	 * Install folder is the Warcraft III installation folder where the
 	 * <code>.build.info</code> file is located. For example
-	 * <code>C:\Program Files (x86)\Warcraft III</code>.
+	 * <code>C:\Program Files\Warcraft III</code>.
 	 * <p>
 	 * Memory mapped IO can be used instead of conventional channel based IO. This
 	 * should improve IO performance considerably by avoiding excessive memory copy
@@ -241,7 +242,8 @@ public class WarcraftIIICASC implements AutoCloseable {
 	 * 
 	 * @param installFolder    Warcraft III installation folder.
 	 * @param useMemoryMapping If memory mapped IO should be used to read file data.
-	 * @param product          The product identifier string to load.
+	 * @param product          Product identifier string of build or null for first
+	 *                         declared build.
 	 * @throws IOException If an exception occurs while mounting.
 	 */
 	public WarcraftIIICASC(final Path installFolder, final boolean useMemoryMapping, final String product)
@@ -254,26 +256,31 @@ public class WarcraftIIICASC implements AutoCloseable {
 			throw new MalformedCASCStructureException("build info does not contain any records");
 		}
 
-		// resolve the active record for the desired product
+		var selectedBuilds = IntStream.range(0, recordCount);
+
+		// filter selection for active only
 		final var activeFieldIndex = buildInfo.getFieldIndex("Active");
 		if (activeFieldIndex == -1) {
 			throw new MalformedCASCStructureException("build info does not contain \"Active\" field");
 		}
-		final var productFieldIndex = buildInfo.getFieldIndex("Product");
-		if (productFieldIndex == -1) {
-			throw new MalformedCASCStructureException("build info does not contain \"Product\" field");
-		}
-		var recordIndex = 0;
-		for (; recordIndex < recordCount; recordIndex += 1) {
-			if (buildInfo.getField(recordIndex, productFieldIndex).equals(product)
-					&& Integer.parseInt(buildInfo.getField(recordIndex, activeFieldIndex)) == 1) {
-				break;
+		selectedBuilds = selectedBuilds
+				.filter(build -> Integer.parseInt(buildInfo.getField(build, activeFieldIndex)) == 1);
+
+		// filter selection for product
+		if (product != null) {
+			final var productFieldIndex = buildInfo.getFieldIndex("Product");
+			if (productFieldIndex == -1) {
+				throw new MalformedCASCStructureException("build info does not contain \"Product\" field");
 			}
+			selectedBuilds = selectedBuilds
+					.filter(build -> buildInfo.getField(build, productFieldIndex).equals(product));
 		}
-		if (recordIndex == recordCount) {
-			throw new MalformedCASCStructureException("build info does not contain product or product is not active");
+
+		final var selectedBuild = selectedBuilds.findFirst();
+		if (selectedBuild.isEmpty()) {
+			throw new IOException("no matching build");
 		}
-		activeInfoRecord = recordIndex;
+		activeInfoRecord = selectedBuild.getAsInt();
 
 		// resolve build configuration file
 		final var buildKeyFieldIndex = buildInfo.getFieldIndex("Build Key");
